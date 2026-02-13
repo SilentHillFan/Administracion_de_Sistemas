@@ -1,169 +1,159 @@
 #!/bin/bash
 
-convertir_ip_a_entero() {
+ip_to_int() {
     local IFS=.
-    read -r a b c d <<< "$1"
-    echo "$(( (a << 24) + (b << 16) + (c << 8) + d ))"
+    read -r i1 i2 i3 i4 <<< "$1"
+    echo "$(( (i1 << 24) + (i2 << 16) + (i3 << 8) + i4 ))"
 }
 
-es_ip_valida() {
-    local direccion=$1
-    local patron='^([0-9]{1,3}\.){3}[0-9]{1,3}$'
+validar_ip() {
+    local ip=$1
+    local regex='^([0-9]{1,3}\.){3}[0-9]{1,3}$'
+    
+    if [[ ! $ip =~ $regex ]]; then return 1; fi
 
-    if [[ ! $direccion =~ $patron ]]; then return 1; fi
-
-    IFS='.' read -r -a partes <<< "$direccion"
-    for segmento in "${partes[@]}"; do
-        if [[ $segmento -lt 0 || $segmento -gt 255 ]]; then return 1; fi
+    IFS='.' read -r -a octs <<< "$ip"
+    for o in "${octs[@]}"; do
+        if [[ $o -lt 0 || $o -gt 255 ]]; then return 1; fi
     done
 
-    if [[ "$direccion" == "127.0.0.1" || "$direccion" == "0.0.0.0" || "$direccion" == "255.255.255.255" ]]; then
+    if [[ "$ip" == "127.0.0.1" || "$ip" == "0.0.0.0" || "$ip" == "255.255.255.255" ]]; then
         return 1
     fi
 
-    if [[ ${partes[2]} -eq 0 && ${partes[3]} -eq 0 ]]; then
+    if [[ ${octs[2]} -eq 0 && ${octs[3]} -eq 0 ]]; then
         return 1
     fi
 
     return 0
 }
 
-verificar_servicio() {
-    echo "================================================="
-    echo "Comprobando estado del servicio DHCP..."
-    echo "================================================="
-
+opcion_verificar() {
+    echo "__________________________________________"
+    echo "Verificando instalacion..."
     if rpm -q dhcp &> /dev/null; then
-        echo "DHCP se encuentra instalado en el sistema."
+        echo "El paquete DHCP esta instalado."
         systemctl is-active dhcpd
     else
-        echo "DHCP no está instalado."
+        echo "El paquete DHCP NO esta instalado."
     fi
-
-    read -p "Pulsa Enter para regresar al menú..."
+    read -p "Presiona Enter para continuar..."
 }
 
-instalar_servicio() {
-    echo "================================================="
-
+opcion_instalar() {
+    echo "__________________________________________"
     if ! rpm -q dhcp &> /dev/null; then
-        echo "Iniciando instalación de DHCP..."
+        echo "Instalando DHCP..."
         sudo yum install -y dhcp > /dev/null 2>&1
-        echo "Instalación finalizada correctamente."
+        echo "Instalacion completada."
     else
-        echo "DHCP ya estaba presente en el sistema."
+        echo "El servicio ya estaba instalado."
     fi
-
-    read -p "Pulsa Enter para regresar al menú..."
+    read -p "Presiona Enter para continuar..."
 }
 
-configurar_red_dhcp() {
-    echo "================================================="
-    echo "        ASISTENTE DE CONFIGURACIÓN DHCP"
-    echo "================================================="
-
-    read -p "Nombre del ámbito: " NOMBRE_AMBITO
-
+opcion_configurar() {
+    echo "++++++++++++++++++++++++++++++++++++++++++++++++++"
+    echo "      CONFIGURACION DEL AMBITO      "
+    echo "++++++++++++++++++++++++++++++++++++++++++++++++++"
+    read -p "Nombre del Ambito (Scope): " SCOPE_NAME
+    
     while true; do
-        read -p "IP inicial del rango: " IP_INICIO
-        if es_ip_valida "$IP_INICIO"; then break; fi
+        read -p "Rango Inicial IP: " IP_START
+        if validar_ip "$IP_START"; then break; fi
     done
 
     while true; do
-        read -p "IP final del rango: " IP_FIN
-        if es_ip_valida "$IP_FIN"; then
-            INT_INICIO=$(convertir_ip_a_entero "$IP_INICIO")
-            INT_FIN=$(convertir_ip_a_entero "$IP_FIN")
-
-            if [[ $INT_FIN -le $INT_INICIO ]]; then
-                echo "   [ERROR] La IP final debe ser mayor que la inicial."
+        read -p "Rango Final IP: " IP_END
+        if validar_ip "$IP_END"; then
+            INT_START=$(ip_to_int "$IP_START")
+            INT_END=$(ip_to_int "$IP_END")
+            
+            if [[ $INT_END -le $INT_START ]]; then
+                echo "   La IP Final debe ser MAYOR a la Inicial."
             else
-                break
+                break 
             fi
         fi
     done
 
-    read -p "Puerta de enlace (opcional): " IP_GATEWAY
-    read -p "Servidor DNS (opcional): " IP_DNS
-    read -p "Tiempo de concesión en segundos: " TIEMPO_LEASE
+    read -p "Gateway (Opcional): " GW_IP
+    read -p "DNS Server (Opcional): " DNS_IP
+    read -p "Tiempo de concesion (Segundos): " LEASE_TIME
 
-    SUBRED_BASE=$(echo $IP_INICIO | cut -d'.' -f1-3)
-    ID_SUBRED="$SUBRED_BASE.0"
-    IP_SERVIDOR="$SUBRED_BASE.1"
-
+    # --- MAGIA SILENCIOSA ---
+    SUBNET_PRE=$(echo $IP_START | cut -d'.' -f1-3)
+    SUBNET_ID="$SUBNET_PRE.0"
+    SERVER_NEW_IP="$SUBNET_PRE.1"
+    
+    # Forzamos usar la tarjeta de red interna
     INTERFAZ="enp0s8"
 
-    echo "-------------------------------------------------"
-    echo "Subred identificada: $ID_SUBRED"
-
-    if ! ip addr show $INTERFAZ | grep -q "$SUBRED_BASE"; then
-        sudo ip addr add $IP_SERVIDOR/24 dev $INTERFAZ > /dev/null 2>&1
+    echo "__________________________________________"
+    echo "Red detectada: $SUBNET_ID"
+    
+    # Asignacion de IP Virtual (Sin mensajes)
+    if ! ip addr show $INTERFAZ | grep -q "$SUBNET_PRE"; then
+        sudo ip addr add $SERVER_NEW_IP/24 dev $INTERFAZ > /dev/null 2>&1
     fi
 
-    ARCHIVO_CONF="/etc/dhcp/dhcpd.conf"
-
-    sudo bash -c "cat > $ARCHIVO_CONF" <<EOF
-subnet $ID_SUBRED netmask 255.255.255.0 {
-    range $IP_INICIO $IP_FIN;
-    default-lease-time $TIEMPO_LEASE;
+    CONF="/etc/dhcp/dhcpd.conf"
+    sudo bash -c "cat > $CONF" <<EOF
+subnet $SUBNET_ID netmask 255.255.255.0 {
+    range $IP_START $IP_END;
+    default-lease-time $LEASE_TIME;
     max-lease-time 7200;
 EOF
 
-    if [[ -n "$IP_GATEWAY" ]]; then
-        sudo bash -c "echo '    option routers $IP_GATEWAY;' >> $ARCHIVO_CONF"
+    if [[ -n "$GW_IP" ]]; then
+        sudo bash -c "echo '    option routers $GW_IP;' >> $CONF"
     fi
-
-    if [[ -n "$IP_DNS" ]]; then
-        sudo bash -c "echo '    option domain-name-servers $IP_DNS;' >> $ARCHIVO_CONF"
+    if [[ -n "$DNS_IP" ]]; then
+        sudo bash -c "echo '    option domain-name-servers $DNS_IP;' >> $CONF"
     fi
+    
+    sudo bash -c "echo '}' >> $CONF"
 
-    sudo bash -c "echo '}' >> $ARCHIVO_CONF"
-
-    if dhcpd -t -cf $ARCHIVO_CONF > /dev/null 2>&1; then
+    if sudo dhcpd -t -cf $CONF > /dev/null 2>&1; then
         sudo systemctl restart dhcpd
-        echo "Configuración aplicada y servicio reiniciado."
+        echo "Servicio configurado y reiniciado con exito."
     else
-        echo "================================================="
-        echo "La configuración contiene errores."
-        dhcpd -t -cf $ARCHIVO_CONF
+        echo "__________________________________________"
+        echo "[ERROR] Error en la configuracion."
+        sudo dhcpd -t -cf $CONF
     fi
-
-    read -p "Pulsa Enter para regresar al menú..."
+    read -p "Presiona Enter para continuar..."
 }
 
-mostrar_clientes() {
-    echo "================================================="
-    echo "        LISTADO DE CLIENTES ACTIVOS"
-    echo "================================================="
-
+opcion_leases() {
+    echo "__________________________________________"
+    echo "CLIENTES CONECTADOS (Leases):"
     if [ -f /var/lib/dhcpd/dhcpd.leases ]; then
         grep "lease " /var/lib/dhcpd/dhcpd.leases | sort | uniq
     else
-        echo "No existen concesiones registradas."
+        echo "No hay registro de clientes."
     fi
-
-    read -p "Pulsa Enter para regresar al menú..."
+    read -p "Presiona Enter para continuar..."
 }
 
 while true; do
-    echo -e "\n#############################################"
-    echo "         ADMINISTRADOR DE SERVIDOR DHCP"
-    echo "#############################################"
-    echo "1) Revisar estado del servicio"
+    echo -e "\n++++++++++++++++++++++++++++++++++"
+    echo "      SISTEMA DHCP"
+    echo "++++++++++++++++++++++++++++++++++++"
+    echo "1) Verificar instalacion "
     echo "2) Instalar DHCP"
-    echo "3) Configurar nueva subred"
-    echo "4) Mostrar clientes conectados"
-    echo "5) Cerrar programa"
-    echo "---------------------------------------------"
-
-    read -p "Elige una opción: " OPCION
-
-    case $OPCION in
-        1) verificar_servicio ;;
-        2) instalar_servicio ;;
-        3) configurar_red_dhcp ;;
-        4) mostrar_clientes ;;
+    echo "3) Configurar Ambito"
+    echo "4) Ver Leases (Clientes)"
+    echo "5) Salir"
+    echo "__________________________________________"
+    read -p "Selecciona una opcion: " OPT
+    
+    case $OPT in
+        1) opcion_verificar ;;
+        2) opcion_instalar ;;
+        3) opcion_configurar ;;
+        4) opcion_leases ;;
         5) exit 0 ;;
-        *) echo "Selección inválida." ;;
+        *) echo "Opcion invalida." ;;
     esac
 done
