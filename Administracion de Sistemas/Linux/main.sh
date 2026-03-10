@@ -8,6 +8,7 @@ source "$SCRIPT_DIR/funciones/dhcp_funciones.sh"
 source "$SCRIPT_DIR/funciones/dns_funciones.sh"
 source "$SCRIPT_DIR/funciones/ssh_funciones.sh"
 source "$SCRIPT_DIR/funciones/ftp_funciones.sh"
+source "$SCRIPT_DIR/funciones/http_funciones.sh"
 
 # Forzar permisos al iniciar
 chmod +x "$SCRIPT_DIR/main.sh" 2>/dev/null
@@ -23,7 +24,8 @@ while true; do
     echo "3) Gestion DNS"
     echo "4) Gestion SSH"
     echo "5) Gestion FTP"
-    echo "6) Salir"
+    echo "6) Gestion HTTP"
+    echo "7) Salir"
     echo "__________________________________________"
     read -p "Selecciona una opcion: " OPT
 
@@ -131,7 +133,108 @@ while true; do
                 esac
             done
             ;;
-        6) exit 0 ;;
+        6)
+            while true; do
+                echo ""
+                echo "++++++++++++++++++++++++++++++++++"
+                echo "   SISTEMA HTTP - CentOS 7"
+                echo "++++++++++++++++++++++++++++++++++"
+                echo "1) Apache (httpd)"
+                echo "2) Nginx"
+                echo "3) Tomcat"
+                echo "4) Volver"
+                echo "__________________________________________"
+                read -p "Selecciona una opcion: " OPT2
+                case $OPT2 in
+                    1)
+                        while true; do
+                            echo ""
+                            echo "++++++++++++++++++++++++++++++++++"
+                            echo "   APACHE (httpd) - CentOS 7"
+                            echo "++++++++++++++++++++++++++++++++++"
+                            echo "1) Ver versiones disponibles"
+                            echo "2) Instalar Apache"
+                            echo "3) Estado del servicio"
+                            echo "4) Reiniciar servicio"
+                            echo "5) Reconfigurar puerto"
+                            echo "6) Volver"
+                            echo "__________________________________________"
+                            read -p "Selecciona una opcion: " OPT3
+                            case $OPT3 in
+                                1) _obtener_versiones_apache | nl -ba -w3 -s') ' ;;
+                                2) instalar_apache ;;
+                                3) estado_apache ;;
+                                4) reiniciar_apache ;;
+                                5) reconfigurar_apache ;;
+                                6) break ;;
+                                *) echo "Opcion invalida." ;;
+                            esac
+                        done
+                        ;;
+                    2)
+                        while true; do
+                            echo ""
+                            echo "++++++++++++++++++++++++++++++++++"
+                            echo "      NGINX - CentOS 7"
+                            echo "++++++++++++++++++++++++++++++++++"
+                            echo "1) Ver versiones disponibles"
+                            echo "2) Instalar Nginx"
+                            echo "3) Estado del servicio"
+                            echo "4) Reiniciar servicio"
+                            echo "5) Reconfigurar puerto"
+                            echo "6) Volver"
+                            echo "__________________________________________"
+                            read -p "Selecciona una opcion: " OPT3
+                            case $OPT3 in
+                                1)
+                                    local _vn
+                                    _vn=$(_obtener_versiones_nginx)
+                                    if [ -z "$_vn" ]; then
+                                        echo "[ERROR] No hay versiones disponibles."
+                                    else
+                                        echo "$_vn" | nl -ba -w3 -s') '
+                                    fi
+                                    ;;
+                                2) instalar_nginx ;;
+                                3) estado_nginx ;;
+                                4) reiniciar_nginx ;;
+                                5) reconfigurar_nginx ;;
+                                6) break ;;
+                                *) echo "Opcion invalida." ;;
+                            esac
+                        done
+                        ;;
+                    3)
+                        while true; do
+                            echo ""
+                            echo "++++++++++++++++++++++++++++++++++"
+                            echo "      TOMCAT - CentOS 7"
+                            echo "++++++++++++++++++++++++++++++++++"
+                            echo "1) Ver versiones disponibles"
+                            echo "2) Instalar Tomcat"
+                            echo "3) Estado del servicio"
+                            echo "4) Reiniciar servicio"
+                            echo "5) Reconfigurar puerto"
+                            echo "6) Volver"
+                            echo "__________________________________________"
+                            read -p "Selecciona una opcion: " OPT3
+                            case $OPT3 in
+                                1) _obtener_versiones_tomcat ;;
+                                2) instalar_tomcat ;;
+                                3) estado_tomcat ;;
+                                4) reiniciar_tomcat ;;
+                                5) reconfigurar_tomcat ;;
+                                6) break ;;
+                                *) echo "Opcion invalida." ;;
+                            esac
+                        done
+                        ;;
+                    4) break ;;
+                    *) echo "Opcion invalida." ;;
+                esac
+            done
+            ;;
+        7) exit 0 ;;
         *) echo "Opcion invalida." ;;
     esac
 done
