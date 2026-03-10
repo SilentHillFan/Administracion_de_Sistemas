@@ -4,6 +4,7 @@
 . .\funciones\dns_funciones.ps1
 . .\funciones\ssh_funciones.ps1
 . .\funciones\ftp_funciones.ps1
+. .\funciones\http_funciones.ps1
 
 while ($true) {
     Write-Host ""
@@ -15,10 +16,11 @@ while ($true) {
     Write-Host "3) Gestion DNS"
     Write-Host "4) Gestion SSH"
     Write-Host "5) Gestion FTP"
-    Write-Host "6) Salir"
+    Write-Host "6) Gestion HTTP"
+    Write-Host "7) Salir"
     Write-Host "__________________________________________"
     $OPT = Read-Host "Selecciona una opcion"
-    
+
     switch ($OPT) {
         "1" {
             Mostrar-Diagnostico
@@ -36,7 +38,6 @@ while ($true) {
                 Write-Host "5) Volver"
                 Write-Host "__________________________________________"
                 $OPT2 = Read-Host "Selecciona una opcion"
-                
                 switch ($OPT2) {
                     "1" { Verificar-EstadoServicio }
                     "2" { Instalar-DHCP }
@@ -61,7 +62,6 @@ while ($true) {
                 Write-Host "6) Volver"
                 Write-Host "__________________________________________"
                 $OPT2 = Read-Host "Selecciona una opcion"
-                
                 switch ($OPT2) {
                     "1" { Opcion-Verificar }
                     "2" { Opcion-Instalar }
@@ -87,7 +87,6 @@ while ($true) {
                 Write-Host "6) Volver"
                 Write-Host "__________________________________________"
                 $OPT2 = Read-Host "Selecciona una opcion"
-                
                 switch ($OPT2) {
                     "1" { Instalar-SSH }
                     "2" { Habilitar-SSH }
@@ -116,7 +115,6 @@ while ($true) {
                 Write-Host "9) Volver"
                 Write-Host "__________________________________________"
                 $OPT2 = Read-Host "Selecciona una opcion"
-                
                 switch ($OPT2) {
                     "1" { Opcion-Instalar-FTP }
                     "2" { Opcion-Configurar-FTP }
@@ -132,11 +130,106 @@ while ($true) {
                 if ($OPT2 -eq "9") { break }
             }
         }
-        "6" { 
-            Write-Host "Saliendo del programa..."
-            exit 
+        "6" {
+            while ($true) {
+                Write-Host ""
+                Write-Host "++++++++++++++++++++++++++++++++++"
+                Write-Host "   SISTEMA HTTP - Windows Server"
+                Write-Host "++++++++++++++++++++++++++++++++++"
+                Write-Host "1) IIS"
+                Write-Host "2) Tomcat"
+                Write-Host "3) Nginx"
+                Write-Host "4) Volver"
+                Write-Host "__________________________________________"
+                $OPT2 = Read-Host "Selecciona una opcion"
+                switch ($OPT2) {
+                    "1" {
+                        while ($true) {
+                            Write-Host ""
+                            Write-Host "++++++++++++++++++++++++++++++++++"
+                            Write-Host "      IIS - Windows Server"
+                            Write-Host "++++++++++++++++++++++++++++++++++"
+                            Write-Host "1) Instalar IIS"
+                            Write-Host "2) Estado del servicio"
+                            Write-Host "3) Reiniciar servicio"
+                            Write-Host "4) Reconfigurar puerto"
+                            Write-Host "5) Volver"
+                            Write-Host "__________________________________________"
+                            $OPT3 = Read-Host "Selecciona una opcion"
+                            switch ($OPT3) {
+                                "1" { Instalar-IIS }
+                                "2" { Estado-IIS }
+                                "3" { Reiniciar-IIS }
+                                "4" { Reconfigurar-IIS }
+                                "5" { break }
+                                default { Write-Host "Opcion invalida." }
+                            }
+                            if ($OPT3 -eq "5") { break }
+                        }
+                    }
+                    "2" {
+                        while ($true) {
+                            Write-Host ""
+                            Write-Host "++++++++++++++++++++++++++++++++++"
+                            Write-Host "      TOMCAT - Windows Server"
+                            Write-Host "++++++++++++++++++++++++++++++++++"
+                            Write-Host "1) Ver versiones disponibles"
+                            Write-Host "2) Instalar Tomcat"
+                            Write-Host "3) Estado del servicio"
+                            Write-Host "4) Reiniciar servicio"
+                            Write-Host "5) Reconfigurar puerto"
+                            Write-Host "6) Volver"
+                            Write-Host "__________________________________________"
+                            $OPT3 = Read-Host "Selecciona una opcion"
+                            switch ($OPT3) {
+                                "1" { $i=1; Obtener-VersionesTomcat | ForEach-Object { Write-Host "  $i) Tomcat $($_.Rama) $($_.Etiqueta) ($($_.Version))"; $i++ } }
+                                "2" { Instalar-Tomcat }
+                                "3" { Estado-Tomcat }
+                                "4" { Reiniciar-Tomcat }
+                                "5" { Reconfigurar-Tomcat }
+                                "6" { break }
+                                default { Write-Host "Opcion invalida." }
+                            }
+                            if ($OPT3 -eq "6") { break }
+                        }
+                    }
+                    "3" {
+                        while ($true) {
+                            Write-Host ""
+                            Write-Host "++++++++++++++++++++++++++++++++++"
+                            Write-Host "      NGINX - Windows Server"
+                            Write-Host "++++++++++++++++++++++++++++++++++"
+                            Write-Host "1) Ver versiones disponibles"
+                            Write-Host "2) Instalar Nginx"
+                            Write-Host "3) Estado del servicio"
+                            Write-Host "4) Reiniciar servicio"
+                            Write-Host "5) Reconfigurar puerto"
+                            Write-Host "6) Volver"
+                            Write-Host "__________________________________________"
+                            $OPT3 = Read-Host "Selecciona una opcion"
+                            switch ($OPT3) {
+                                "1" { $i=1; Obtener-VersionesNginx | ForEach-Object { Write-Host "  $i) $_"; $i++ } }
+                                "2" { Instalar-Nginx }
+                                "3" { Estado-Nginx }
+                                "4" { Reiniciar-Nginx }
+                                "5" { Reconfigurar-Nginx }
+                                "6" { break }
+                                default { Write-Host "Opcion invalida." }
+                            }
+                            if ($OPT3 -eq "6") { break }
+                        }
+                    }
+                    "4" { break }
+                    default { Write-Host "Opcion invalida." }
+                }
+                if ($OPT2 -eq "4") { break }
+            }
         }
-        default { 
+        "7" {
+            Write-Host "Saliendo del programa..."
+            exit
+        }
+        default {
             Write-Host "Opcion invalida. Intenta de nuevo."
             Read-Host "Presiona Enter para continuar"
         }
